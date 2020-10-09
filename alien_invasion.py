@@ -58,6 +58,9 @@ class AlienInvasion:
 
             # Actualiza las balas cada vuelta de bucle.
             self._update_bullets()
+            
+            # Actualiza la posicion de los aliens.
+            self._update_aliens()
 
             # Cada vuelta de bucle pinta la pantalla.
             self._update_screen()
@@ -165,7 +168,11 @@ class AlienInvasion:
         alien.rect.x = alien.x
         alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
         self.aliens.add(alien)
+    
+    def _update_aliens(self):
+        """Actualizar la posicion de todos los aliens en la flota"""
         
+        self.aliens.update()
 
 ############################################# UPDATE SCREEN ######################################################
 
@@ -189,6 +196,8 @@ class AlienInvasion:
         # Hacer visible el ultimo dibujo de pantalla.
         pygame.display.flip()
 
+
+################################################## MAIN #############################################################
 
 
 if __name__ == '__main__':

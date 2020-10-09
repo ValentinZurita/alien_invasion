@@ -9,6 +9,9 @@ class Alien(Sprite):
 
         super().__init__()
         self.screen = ai_game.screen
+        
+        # Cargar los ajustes
+        self.settings = self.ai_game.settings
 
         # Cargar la imagen del alien y fijar su rectangulo.
         self.image = pygame.image.load("images/alien.bmp")
@@ -20,4 +23,12 @@ class Alien(Sprite):
 
         # Guardar la posicion horizontal del aline
         self.x = float(self.rect.x)
+        
+        
+    def update(self):
+        """Mover el alien a la derecha"""
+        
+        self.x += self.settings.alien_speed
+        self.rect.x = self.x
+        
 

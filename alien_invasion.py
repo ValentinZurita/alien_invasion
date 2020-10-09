@@ -157,6 +157,7 @@ class AlienInvasion:
                 #Invoca al metodo create_alien()
                 self._create_alien(alien_number, row_number)
             
+            sfsdsdsds
             
     def _create_alien(self, alien_number, row_number):
         """Crea un solo alien"""

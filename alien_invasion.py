@@ -1,10 +1,11 @@
 import sys
 import pygame
+from time import sleep
+from alien import Alien
+from bullet import Bullet
 from settings import Settings
 from ship import Ship
-from bullet import Bullet
-from alien import Alien
-
+from game_stats import GameStats
 
 
 class AlienInvasion:
@@ -28,6 +29,9 @@ class AlienInvasion:
 
         # Pone el nombre en la barra de titulos.
         pygame.display.set_caption("Alien Invasion")
+
+        # Instancia de las estadisticas del juego
+        self.stats = GameStats(self)
 
         # Instancia de la nave del juego.
         self.ship = Ship(self)
@@ -124,13 +128,51 @@ class AlienInvasion:
     def _update_bullets(self):
         """Actualizar la posicion de las balas y deshacerse de las viejas siempre ingratas"""
 
-        # Actualizar la posicion de las balas
+        # Actualizar la posicion de las balas.
         self.bullets.update()
 
-        # Deshacerse de las balas que desparecen de la pantalla
+        # Deshacerse de las balas que desparecen de la pantalla.
         for bullet in self.bullets.copy():
             if bullet.rect.bottom <= 0:
                 self.bullets.remove(bullet)
+        
+        # Llama al metodo en caso de detectar una colision.
+        self._check_bullet_alien_collision()
+        
+
+    def _check_bullet_alien_collision(self):
+        """Responder a una colision de balas y aliens"""
+
+        # Remover cualquier alien y bala que haya colisionado.
+        collisions = pygame.sprite.groupcollide(
+            self.bullets, self.aliens, True, True)
+
+        # En caso de tener la lista de alien vacia.
+        # Repopular la flota de aliens.
+        if not self.aliens:
+            self.bullets.empty()
+            self._create_fleet_()
+
+
+################################################## NAVE ##########################################################
+
+
+    def _ship_hit(self):
+        """Responde cuando una nave es impactada por un alien"""
+
+        # Reduce el numero de naves restantes
+        self.stats.ships_left -= 1
+
+        # Se deshace de cualquier alien y bala sobrante
+        self.aliens.empty()
+        self.bullets.empty()
+
+        # Se crea una nueva flota y se centra la nave
+        self._create_fleet_()
+        self.ship.center_ship()
+
+        # Pausa 
+        sleep(0.8)
 
 
 ############################################## ALIEN FLEET #######################################################
@@ -139,14 +181,14 @@ class AlienInvasion:
     def _create_fleet_(self):
         """Crear la flota de aliens invasores como cerebros"""
 
-        # Crear un alien y encontrar el numero de aliens que entran en una fila.
+        # ***alien por fila*** Crear un alien y encontrar el numero de aliens que entran en una fila.
         # El espacio entre cada alien es igual al ancho de un alien.
         alien = Alien(self)
         alien_width, alien_height = alien.rect.size
         avalible_space_x = self.settings.screen_width - (2 * alien_width)
         number_aliens_x = avalible_space_x // (2 * alien_width)
         
-        # Determina el numero de filas de aliens que entran en la pantalla
+        # ****alien por columna*** Determina el numero de filas de aliens que entran en la pantalla
         ship_height = self.ship.rect.height
         avalible_space_y = (self.settings.screen_height - (3 * alien_height) - ship_height)
         numbers_rows = avalible_space_y // (2 * alien_height)
@@ -157,8 +199,7 @@ class AlienInvasion:
                 #Invoca al metodo create_alien()
                 self._create_alien(alien_number, row_number)
             
-            sfsdsdsds
-            
+          
     def _create_alien(self, alien_number, row_number):
         """Crea un solo alien"""
         
@@ -169,11 +210,35 @@ class AlienInvasion:
         alien.rect.x = alien.x
         alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
         self.aliens.add(alien)
+
+    
+    def _check_fleet_edges(self):
+        """Responde apropiadamente cuando algun alien toca el borde de la pantalla"""
+
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
+    
+
+    def _change_fleet_direction(self):
+        """Baja la flota de aliens y cambia su direccion"""
+
+        for alien in self.aliens.sprites():
+            alien.rect.y += self.settings.fleet_drop_speed # Ajusta la coordenada y
+        self.settings.fleet_direction *= -1 #Cambia la direccion
+
     
     def _update_aliens(self):
         """Actualizar la posicion de todos los aliens en la flota"""
         
-        self.aliens.update()
+        self._check_fleet_edges() # Verifica si algun alien ha llegado al borde la pantalla
+        self.aliens.update() # Llama al metodo update de aline para la coordenada x
+
+        # Buscar colisiones entre los aliens y la nave.
+        if pygame.sprite.spritecollideany(self.ship, self.aliens):
+            self._ship_hit()
+        
 
 ############################################# UPDATE SCREEN ######################################################
 

@@ -53,6 +53,11 @@ class Ship:
         # blit dibuja la nave dentro de la pantalla.
         self.screen.blit(self.image, self.rect)
 
+    
+    def center_ship(self):
+        """Centra la nave en medio de la pantalla"""
 
+        self.rect.midbottom = self.screen_rect.midbottom
+        self.x = float(self.rect.x)
 
 

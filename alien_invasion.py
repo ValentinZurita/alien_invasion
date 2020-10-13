@@ -6,6 +6,7 @@ from bullet import Bullet
 from settings import Settings
 from ship import Ship
 from game_stats import GameStats
+from button import Button
 
 
 class AlienInvasion:
@@ -43,6 +44,9 @@ class AlienInvasion:
         self.aliens = pygame.sprite.Group()
         self._create_fleet_()
 
+        # Crear el boton "Play"
+        self.play_button = Button(self, "Play")
+
         # Fija color de fondo para la pantalla.
         self.backgroung_color = (self.settings.background_color)
 
@@ -57,14 +61,16 @@ class AlienInvasion:
             # Responde a los eventos de teclado o mouse.
             self._check_events()
 
-            # Actualiza la posicion de la nave cada vuelta de bucle.
-            self.ship.update()
+            if self.stats.game_active:
 
-            # Actualiza las balas cada vuelta de bucle.
-            self._update_bullets()
-            
-            # Actualiza la posicion de los aliens.
-            self._update_aliens()
+                # Actualiza la posicion de la nave cada vuelta de bucle.
+                self.ship.update()
+
+                # Actualiza las balas cada vuelta de bucle.
+                self._update_bullets()
+                
+                # Actualiza la posicion de los aliens.
+                self._update_aliens()
 
             # Cada vuelta de bucle pinta la pantalla.
             self._update_screen()
@@ -86,10 +92,13 @@ class AlienInvasion:
             elif event.type == pygame.KEYDOWN:
                 self._check_keydown_events(event)
 
-
             # Tecla liberada.
             elif event.type == pygame.KEYUP:
                 self._check_keyup_events(event)
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                self._check_play_button(mouse_pos)
 
 
     def _check_keydown_events(self, event):
@@ -113,6 +122,31 @@ class AlienInvasion:
         elif event.key == pygame.K_LEFT:
             self.ship.moving_left = False
 
+    
+    def _check_play_button(self, mouse_pos):
+        """Empieza un nuevo juego cuando el jugador
+        presiona el boton "Play" """
+        
+        button_clicked = self.play_button.rect.collidepoint(mouse_pos)
+        if button_clicked and not self.stats.game_active:
+
+            # Resetear los ajustes del juego.
+            self.settings.initialize_dynamic_settings()
+
+            # Resetear las estadisticas del juego.
+            self.stats.game_active = True
+
+            # Quitar todas las balas y aliens.
+            self.aliens.empty()
+            self.bullets.empty()
+
+            # Crear una nueva flota y centrar la nave.
+            self._create_fleet_()
+            self.ship.center_ship()
+
+            # Esconder el cursor del mouse.
+            pygame.mouse.set_visible(False)
+        
 
 ############################################### BULLETS ########################################################
 
@@ -152,6 +186,7 @@ class AlienInvasion:
         if not self.aliens:
             self.bullets.empty()
             self._create_fleet_()
+            self.settings.increase_speed()
 
 
 ################################################## NAVE ##########################################################
@@ -160,19 +195,29 @@ class AlienInvasion:
     def _ship_hit(self):
         """Responde cuando una nave es impactada por un alien"""
 
-        # Reduce el numero de naves restantes
-        self.stats.ships_left -= 1
+        # Si el numero de naves es mayor a 0
+        # Se restablece el juego 
+        if self.stats.ships_left > 0:
 
-        # Se deshace de cualquier alien y bala sobrante
-        self.aliens.empty()
-        self.bullets.empty()
+            # Reduce el numero de naves restantes
+            self.stats.ships_left -= 1
 
-        # Se crea una nueva flota y se centra la nave
-        self._create_fleet_()
-        self.ship.center_ship()
+            # Se deshace de cualquier alien y bala sobrante
+            self.aliens.empty()
+            self.bullets.empty()
 
-        # Pausa 
-        sleep(0.8)
+            # Se crea una nueva flota y se centra la nave
+            self._create_fleet_()
+            self.ship.center_ship()
+
+            # Pausa 
+            sleep(0.8)
+        
+        # Si el numero de naves es menor a 0
+        # El estado del juego pasa a False
+        else:
+            self.stats.game_active = False
+            pygame.mouse.set_visible(True)
 
 
 ############################################## ALIEN FLEET #######################################################
@@ -229,6 +274,16 @@ class AlienInvasion:
         self.settings.fleet_direction *= -1 #Cambia la direccion
 
     
+    def _check_aliens_bottom(self):
+        """Verificar si algun alien ha tocado el fondo de la pantalla"""
+
+        screen_rect = self.screen.get_rect()
+        for alien in self.aliens.sprites():
+            if alien.rect.bottom >= screen_rect.bottom:
+                self._ship_hit()
+                break
+
+    
     def _update_aliens(self):
         """Actualizar la posicion de todos los aliens en la flota"""
         
@@ -238,6 +293,9 @@ class AlienInvasion:
         # Buscar colisiones entre los aliens y la nave.
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
             self._ship_hit()
+
+        #Buscar por aliens que toquen el fondo de la pantalla
+        self._check_aliens_bottom()
         
 
 ############################################# UPDATE SCREEN ######################################################
@@ -258,6 +316,10 @@ class AlienInvasion:
 
         # Dibuja los aliens.
         self.aliens.draw(self.screen)
+
+        # Dibujar boton "Play" si el juego esta inactivo.
+        if not self.stats.game_active:
+            self.play_button.draw_button()
 
         # Hacer visible el ultimo dibujo de pantalla.
         pygame.display.flip()

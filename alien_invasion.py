@@ -140,10 +140,13 @@ class AlienInvasion:
             # Resetear las estadisticas del juego.
             self.stats.game_active = True
 
+            # Resetea los stats
+            self.stats.reset_stats()
+
             # Resetear Score.
             self.stats.score = 0
             self.sb.prep_score()
-            self.stats.level = 0
+            self.stats.level = self.stats.level
             self.sb.prep_level()
             self.stats.ships_left = self.settings.ship_limit
             self.sb.prep_ships()
